@@ -3,33 +3,261 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IoT & Code Academy</title>
-  
-  <!-- Tailwind CSS pour les styles -->
+  <title>IoT & Code Academy - Formation Interactive</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- React & ReactDOM -->
+
+  <!-- React & ReactDOM (Versions CDN production) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Babel compiler pour JSX dans le navigateur -->
+
+  <!-- Compiler Babel (pour exécuter le JSX directement dans le navigateur) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div id="root"></div>
 
+  <!-- Le code React est écrit ci-dessous sous format Babel/JSX -->
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // Collez le code React (à partir de function App() ou des composants) ici
+    // --- ICONES SVG AUTONOMES ---
+    const Icons = {
+      BookOpen: () => <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>,
+      GitBranch: () => <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 3v12m0 0a3 3 0 103 3H6zm0 0a3 3 0 013-3h6a3 3 0 013 3 3 3 0 103-3H6z"/></svg>,
+      Cpu: () => <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>,
+      Code: () => <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>,
+      Zap: () => <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>,
+      Trophy: () => <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+    };
+
     function App() {
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [userXP, setUserXP] = useState(() => parseInt(localStorage.getItem('user_xp') || '0'));
+      const [completedModules, setCompletedModules] = useState(() => JSON.parse(localStorage.getItem('completed_mods') || '[]'));
+      const [tempSim, setTempSim] = useState(24.5);
+      const [relayState, setRelayState] = useState(false);
+      const [networkLog, setNetworkLog] = useState([]);
+
+      useEffect(() => {
+        localStorage.setItem('user_xp', userXP);
+        localStorage.setItem('completed_mods', JSON.stringify(completedModules));
+      }, [userXP, completedModules]);
+
+      const completeModule = (id, xpReward) => {
+        if (!completedModules.includes(id)) {
+          setCompletedModules([...completedModules, id]);
+          setUserXP(userXP + xpReward);
+        }
+      };
+
+      const sendMqttMessage = (cmd) => {
+        const time = new Date().toLocaleTimeString();
+        if (cmd === 'TOGGLE') {
+          const newState = !relayState;
+          setRelayState(newState);
+          setNetworkLog(prev => [`[${time}] MQTT TOPIC: home/relay -> PAYLOAD: {"status": "${newState ? 'ON' : 'OFF'}"}`, ...prev.slice(0, 5)]);
+        } else if (cmd === 'TELEMETRY') {
+          setNetworkLog(prev => [`[${time}] HTTP POST /api/telemetry -> {"temp": ${tempSim.toFixed(1)}°C, "wifi": -65dBm}`, ...prev.slice(0, 5)]);
+        }
+      };
+
       return (
-        <div class="p-8 text-center">
-          <h1 class="text-3xl font-bold text-cyan-400">IoT & Code Academy</h1>
-          <p class="mt-4 text-slate-300">Bienvenue dans votre formation interactive !</p>
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+          <!-- Navigation -->
+          <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg">
+                  <Icons.Zap />
+                </div>
+                <span className="font-bold text-lg text-slate-100">IoT & Code Academy</span>
+              </div>
+              <div className="flex space-x-2">
+                <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-semibold' : 'text-slate-400 hover:text-white'}`}>
+                  Tableau de bord
+                </button>
+                <button onClick={() => setActiveTab('modules')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'modules' ? 'bg-cyan-500 text-slate-950 font-semibold' : 'text-slate-400 hover:text-white'}`}>
+                  Cours & Ateliers
+                </button>
+                <button onClick={() => setActiveTab('capstone')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'capstone' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-400 hover:text-white'}`}>
+                  Projet Simulateur
+                </button>
+              </div>
+              <div className="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                <Icons.Trophy />
+                <span className="text-amber-400 font-bold text-sm">{userXP} XP</span>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-6xl mx-auto px-4 py-8">
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-cyan-900/40 via-slate-900 to-slate-900 p-8 rounded-2xl border border-cyan-500/30">
+                  <h1 className="text-3xl font-extrabold text-white mb-2">Maîtrisez le C++, JavaScript et l'IoT</h1>
+                  <p className="text-slate-300 max-w-2xl mb-6">Formation pratique : apprenez à naviguer sur GitHub, décoder des microcontrôleurs en C++ et connecter des objets au Cloud avec une interface JS.</p>
+                  <button onClick={() => setActiveTab('modules')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-6 py-3 rounded-xl transition shadow-lg shadow-cyan-500/20">
+                    Commencer la Formation
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h3 className="text-slate-400 text-sm font-semibold mb-1">Niveau & Progression</h3>
+                    <p className="text-2xl font-bold text-cyan-400">Niveau {Math.floor(userXP / 100) + 1}</p>
+                    <p className="text-xs text-slate-500 mt-2">{completedModules.length} / 4 modules terminés</p>
+                  </div>
+                  <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h3 className="text-slate-400 text-sm font-semibold mb-1">Expérience Totale</h3>
+                    <p className="text-2xl font-bold text-amber-400">{userXP} XP</p>
+                    <p className="text-xs text-slate-500 mt-2">Sauvegardé automatiquement dans votre navigateur</p>
+                  </div>
+                  <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h3 className="text-slate-400 text-sm font-semibold mb-1">Projet Final Capstone</h3>
+                    <p className={`text-2xl font-bold ${completedModules.length >= 4 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      {completedModules.length >= 4 ? 'Débloqué !' : 'Verrouillé'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-2">Complétez tous les cours pour valider</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'modules' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white mb-4">Programme d'apprentissage</h2>
+                
+                {/* Module 1 */}
+                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2 text-cyan-400 mb-2">
+                      <Icons.GitBranch />
+                      <span className="font-semibold text-sm">Module 1</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Naviguer dans GitHub</h3>
+                    <p className="text-slate-400 text-sm mt-1">Comprendre les fichiers main.cpp, package.json, les commits et les branches.</p>
+                  </div>
+                  <button onClick={() => completeModule(1, 100)} className={`px-5 py-2.5 rounded-xl font-bold text-sm ${completedModules.includes(1) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'}`}>
+                    {completedModules.includes(1) ? '✓ Terminé (+100 XP)' : 'Valider ce module (+100 XP)'}
+                  </button>
+                </div>
+
+                {/* Module 2 */}
+                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2 text-cyan-400 mb-2">
+                      <Icons.Cpu />
+                      <span className="font-semibold text-sm">Module 2</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Architecture Réseau & IoT</h3>
+                    <p className="text-slate-400 text-sm mt-1">Comment un objet physique communique avec un serveur Cloud via HTTP et MQTT.</p>
+                  </div>
+                  <button onClick={() => completeModule(2, 100)} className={`px-5 py-2.5 rounded-xl font-bold text-sm ${completedModules.includes(2) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'}`}>
+                    {completedModules.includes(2) ? '✓ Terminé (+100 XP)' : 'Valider ce module (+100 XP)'}
+                  </button>
+                </div>
+
+                {/* Module 3 */}
+                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2 text-cyan-400 mb-2">
+                      <Icons.Code />
+                      <span className="font-semibold text-sm">Module 3</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Comprendre le C++ Embarqué</h3>
+                    <p className="text-slate-400 text-sm mt-1">Analyse des structures setup(), loop(), pointeurs et entrées/sorties physiques.</p>
+                  </div>
+                  <button onClick={() => completeModule(3, 100)} className={`px-5 py-2.5 rounded-xl font-bold text-sm ${completedModules.includes(3) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'}`}>
+                    {completedModules.includes(3) ? '✓ Terminé (+100 XP)' : 'Valider ce module (+100 XP)'}
+                  </button>
+                </div>
+
+                {/* Module 4 */}
+                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2 text-cyan-400 mb-2">
+                      <Icons.BookOpen />
+                      <span className="font-semibold text-sm">Module 4</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">JavaScript & Interfaces Dynamiques</h3>
+                    <p className="text-slate-400 text-sm mt-1">Interroger des APIs avec fetch(), modifier le DOM et piloter des actionneurs.</p>
+                  </div>
+                  <button onClick={() => completeModule(4, 100)} className={`px-5 py-2.5 rounded-xl font-bold text-sm ${completedModules.includes(4) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'}`}>
+                    {completedModules.includes(4) ? '✓ Terminé (+100 XP)' : 'Valider ce module (+100 XP)'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'capstone' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white">Simulateur Capstone : Microcontrôleur & Dashboard JS</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* C++ Hardware Box */}
+                  <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h3 className="font-bold text-cyan-400 flex items-center space-x-2 mb-4">
+                      <Icons.Cpu />
+                      <span>Appareil Physique (Puce ESP32 - C++)</span>
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs text-slate-400">Capteur de Température Simulée</label>
+                        <input 
+                          type="range" min="15" max="40" step="0.5" 
+                          value={tempSim} 
+                          onChange={(e) => setTempSim(parseFloat(e.target.value))}
+                          className="w-full mt-1 accent-cyan-400"
+                        />
+                        <div className="flex justify-between text-xs text-slate-400">
+                          <span>15°C</span>
+                          <span className="text-cyan-400 font-bold">{tempSim.toFixed(1)} °C</span>
+                          <span>40°C</span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-slate-950 rounded-lg border border-slate-800">
+                        <span className="text-xs text-slate-500 block mb-1">État de la LED / Relais physique :</span>
+                        <span className={`font-bold px-3 py-1 rounded text-xs ${relayState ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'}`}>
+                          {relayState ? 'ALLUMÉ (HIGH)' : 'ÉTEINT (LOW)'}
+                        </span>
+                      </div>
+
+                      <button onClick={() => sendMqttMessage('TELEMETRY')} className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold py-2 rounded-lg text-sm transition">
+                        Envoyer Télémétrie HTTP
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* JS Web Dashboard Box */}
+                  <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h3 className="font-bold text-amber-400 flex items-center space-x-2 mb-4">
+                      <Icons.Code />
+                      <span>Interface Web App (JavaScript / Control)</span>
+                    </h3>
+
+                    <div className="space-y-4">
+                      <p className="text-sm text-slate-300">Commandez l'appareil physique à distance via des paquets réseau :</p>
+                      
+                      <button onClick={() => sendMqttMessage('TOGGLE')} className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl transition">
+                        Basculer Relais (MQTT Command)
+                      </button>
+
+                      <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs text-slate-400 h-36 overflow-y-auto">
+                        <span className="text-slate-600 block mb-1">// Journal des paquets réseau transmis :</span>
+                        {networkLog.length === 0 ? <span className="italic text-slate-600">Aucune transmission...</span> : networkLog.map((log, index) => (
+                          <div key={index} className="text-cyan-400 mb-1">{log}</div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
         </div>
       );
     }

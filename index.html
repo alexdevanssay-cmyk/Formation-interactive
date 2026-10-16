@@ -1,0 +1,1136 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Trophy, BookOpen, GitBranch, Cpu, Code, Zap, CheckCircle2, 
+  Circle, Play, RefreshCw, Send, Terminal, Layers, ArrowRight, 
+  Lock, Award, Shield, Server, Wifi, Globe, Smartphone, Sliders,
+  Check, ChevronRight, FileCode, Folder, GitPullRequest, GitCommit,
+  Info, Database, Cloud, Radio, Eye
+} from 'lucide-react';
+
+// Main Application Component
+export default function App() {
+  // Navigation & User Progress State
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeModule, setActiveModule] = useState(1);
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem('tech_academy_profile');
+    return saved ? JSON.parse(saved) : {
+      xp: 120,
+      level: 1,
+      badges: ['Bienvenue Navigator'],
+      completedLessons: [],
+      capstoneCompleted: false
+    };
+  });
+
+  // Save progress locally
+  useEffect(() => {
+    localStorage.setItem('tech_academy_profile', JSON.stringify(userProfile));
+  }, [userProfile]);
+
+  const addXP = (amount, badgeName = null) => {
+    setUserProfile(prev => {
+      const newXP = prev.xp + amount;
+      const newLevel = Math.floor(newXP / 200) + 1;
+      const newBadges = [...prev.badges];
+      if (badgeName && !newBadges.includes(badgeName)) {
+        newBadges.push(badgeName);
+      }
+      return {
+        ...prev,
+        xp: newXP,
+        level: newLevel,
+        badges: newBadges
+      };
+    });
+  };
+
+  const markLessonComplete = (lessonId) => {
+    if (!userProfile.completedLessons.includes(lessonId)) {
+      setUserProfile(prev => ({
+        ...prev,
+        completedLessons: [...prev.completedLessons, lessonId]
+      }));
+      addXP(50);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col">
+      {/* Top Header / Navigation Bar */}
+      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+            <div className="bg-gradient-to-tr from-cyan-500 to-blue-600 p-2 rounded-xl shadow-lg shadow-cyan-500/20">
+              <Cpu className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="font-bold text-lg bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                IoT & Code Academy
+              </h1>
+              <p className="text-xs text-slate-400">Formation Interactive Fullstack & Embarqué</p>
+            </div>
+          </div>
+
+          {/* User Progress Header Display */}
+          <div className="flex items-center space-x-6">
+            <div className="hidden sm:flex items-center space-x-3 bg-slate-800/80 px-4 py-1.5 rounded-full border border-slate-700/50">
+              <div className="flex items-center space-x-1 text-amber-400 text-sm font-semibold">
+                <Trophy className="w-4 h-4" />
+                <span>Niv. {userProfile.level}</span>
+              </div>
+              <div className="w-24 bg-slate-700 h-2 rounded-full overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-amber-400 to-cyan-400 h-full transition-all duration-500" 
+                  style={{ width: `${(userProfile.xp % 200) / 2}%` }}
+                />
+              </div>
+              <span className="text-xs text-slate-400 font-mono">{userProfile.xp} XP</span>
+            </div>
+
+            <nav className="flex space-x-2">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  activeTab === 'dashboard' 
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                Tableau de bord
+              </button>
+              <button
+                onClick={() => setActiveTab('modules')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  activeTab === 'modules' 
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                Cours & Exercices
+              </button>
+              <button
+                onClick={() => setActiveTab('capstone')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition ${
+                  activeTab === 'capstone' 
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                    : 'text-slate-400 hover:text-amber-300 hover:bg-slate-800'
+                }`}
+              >
+                <Zap className="w-4 h-4 text-amber-400" />
+                <span>Projet Capstone</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content View Switcher */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+        {activeTab === 'dashboard' && (
+          <DashboardView 
+            userProfile={userProfile} 
+            setActiveTab={setActiveTab} 
+            setActiveModule={setActiveModule} 
+          />
+        )}
+
+        {activeTab === 'modules' && (
+          <ModulesView 
+            activeModule={activeModule} 
+            setActiveModule={setActiveModule}
+            userProfile={userProfile}
+            markLessonComplete={markLessonComplete}
+            addXP={addXP}
+          />
+        )}
+
+        {activeTab === 'capstone' && (
+          <CapstoneView 
+            userProfile={userProfile}
+            addXP={addXP}
+            setUserProfile={setUserProfile}
+          />
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/80 bg-slate-950 py-4 text-center text-xs text-slate-500">
+        <p>IoT & Fullstack Interactive Learning Academy - Réseau, C++, JavaScript & GitHub</p>
+      </footer>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// DASHBOARD VIEW
+// -----------------------------------------------------------------------------
+function DashboardView({ userProfile, setActiveTab, setActiveModule }) {
+  const modules = [
+    { id: 1, title: 'GitHub Master & Explorer', desc: 'Comprendre les dépôts, branches, commits, PRs et lire un projet.', icon: GitBranch, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    { id: 2, title: 'Architecture Système & IoT', desc: 'Communication Réseau: REST, WebSockets, MQTT, Bluetooth & Cloud.', icon: NetworkIcon, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { id: 3, title: 'C++ Embarqué Décodé', desc: 'Pointeurs, mémoire, boucles hardware, classes et fichiers d\'en-tête.', icon: Cpu, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { id: 4, title: 'JavaScript & Web Async', desc: 'Async/Await, APIs, Fetch JSON, DOM et contrôle interactif.', icon: Code, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { id: 5, title: 'Projet Capstone Boss', desc: 'Simulateur complet : firmware C++ + dashboard JS en temps réel.', icon: Zap, color: 'text-red-400', bg: 'bg-red-500/10' },
+  ];
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+      {/* Hero Welcome Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-6 md:p-8 border border-slate-800 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="relative z-10 max-w-2xl space-y-4">
+          <div className="inline-flex items-center space-x-2 bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-full text-xs font-semibold border border-cyan-500/20">
+            <Zap className="w-3.5 h-3.5" />
+            <span>Apprentissage Immersif et Pratique</span>
+          </div>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">
+            Maîtrisez le C++, JavaScript et l'IoT de A à Z
+          </h2>
+          <p className="text-slate-300 text-sm leading-relaxed">
+            Bienvenue dans votre parcours interactif. Ici, vous apprendrez à naviguer dans des dépôts GitHub réels, déchiffrer le C++ des puces physiques, connecter des appareils au Cloud via MQTT/WebSockets et piloter le tout avec un dashboard Web en JavaScript.
+          </p>
+          <div className="pt-2 flex flex-wrap gap-3">
+            <button 
+              onClick={() => { setActiveTab('modules'); setActiveModule(1); }}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center space-x-2 transition"
+            >
+              <span>Continuer la Formation</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setActiveTab('capstone')}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium px-5 py-2.5 rounded-xl flex items-center space-x-2 transition"
+            >
+              <Terminal className="w-4 h-4 text-amber-400" />
+              <span>Ouvrir le Simulateur Capstone</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats and Badges Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Profile Progress */}
+        <div className="bg-slate-900/60 rounded-xl p-5 border border-slate-800 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Statut du Compte</span>
+            <Trophy className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-black text-white">Niveau {userProfile.level}</span>
+              <span className="text-xs font-mono text-cyan-400">{userProfile.xp} Total XP</span>
+            </div>
+            <p className="text-xs text-slate-400">Complétez des modules et réussissez des quiz pour gagner de l'XP et monter de niveau.</p>
+          </div>
+        </div>
+
+        {/* Unlocked Badges */}
+        <div className="bg-slate-900/60 rounded-xl p-5 border border-slate-800 md:col-span-2">
+          <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block mb-3">Trophées & Badges Débloqués</span>
+          <div className="flex flex-wrap gap-2">
+            {userProfile.badges.map((badge, idx) => (
+              <span key={idx} className="bg-gradient-to-r from-slate-800 to-slate-900 border border-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 shadow">
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>{badge}</span>
+              </span>
+            ))}
+            {userProfile.badges.length === 0 && (
+              <p className="text-xs text-slate-500 italic">Aucun badge débloqué pour le moment.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modules Progress Overview */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-slate-200">Modules du Parcours</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {modules.map((mod) => {
+            const Icon = mod.icon;
+            const isCompleted = userProfile.completedLessons.includes(`mod_${mod.id}`);
+            return (
+              <div 
+                key={mod.id}
+                onClick={() => { setActiveTab('modules'); setActiveModule(mod.id); }}
+                className="bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 p-5 rounded-2xl cursor-pointer transition group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2.5 rounded-xl ${mod.bg} ${mod.color}`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    {isCompleted ? (
+                      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-2.5 py-1 rounded-full flex items-center space-x-1">
+                        <Check className="w-3 h-3" />
+                        <span>Terminé</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs font-mono text-slate-500">Module 0{mod.id}</span>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-slate-100 group-hover:text-cyan-400 transition">{mod.title}</h4>
+                  <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{mod.desc}</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs font-medium text-cyan-400">
+                  <span>Explorer la leçon</span>
+                  <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Network Icon helper for Module 2
+function NetworkIcon(props) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="16" y="16" width="6" height="6" rx="1" />
+      <rect x="2" y="16" width="6" height="6" rx="1" />
+      <rect x="9" y="2" width="6" height="6" rx="1" />
+      <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" />
+      <path d="M12 12V8" />
+    </svg>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MODULES LEARNING VIEW
+// -----------------------------------------------------------------------------
+function ModulesView({ activeModule, setActiveModule, userProfile, markLessonComplete, addXP }) {
+  const moduleList = [
+    { id: 1, name: '1. Navigation GitHub' },
+    { id: 2, name: '2. Architecture & IoT' },
+    { id: 3, name: '3. C++ Embarqué' },
+    { id: 4, name: '4. JavaScript Async' },
+    { id: 5, name: '5. Ateliers & Défis' }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Sidebar Selector */}
+      <div className="lg:col-span-1 space-y-2">
+        <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider px-2 mb-2">Sommaire du Cours</h3>
+        {moduleList.map((m) => (
+          <button
+            key={m.id}
+            onClick={() => setActiveModule(m.id)}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition flex items-center justify-between ${
+              activeModule === m.id
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-md'
+                : 'bg-slate-900/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            <span>{m.name}</span>
+            {userProfile.completedLessons.includes(`mod_${m.id}`) && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Module Content Panel */}
+      <div className="lg:col-span-3">
+        {activeModule === 1 && (
+          <Module1GitHub markLessonComplete={markLessonComplete} addXP={addXP} />
+        )}
+        {activeModule === 2 && (
+          <Module2Architecture markLessonComplete={markLessonComplete} addXP={addXP} />
+        )}
+        {activeModule === 3 && (
+          <Module3Cpp markLessonComplete={markLessonComplete} addXP={addXP} />
+        )}
+        {activeModule === 4 && (
+          <Module4JS markLessonComplete={markLessonComplete} addXP={addXP} />
+        )}
+        {activeModule === 5 && (
+          <Module5Challenges markLessonComplete={markLessonComplete} addXP={addXP} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MODULE 1: GITHUB MASTER EXPLORER
+// -----------------------------------------------------------------------------
+function Module1GitHub({ markLessonComplete, addXP }) {
+  const [currentFile, setCurrentFile] = useState('README.md');
+  const [currentTab, setCurrentTab] = useState('code');
+  const [completedQuest, setCompletedQuest] = useState(false);
+
+  const fileContents = {
+    'README.md': `# SmartStation-ESP32
+Projet IoT Open-Source de station météo et contrôle domotique.
+
+## 🚀 Fonctionnalités
+- Lecture des capteurs DHT22 en **C++**
+- Envoi des métriques en WebSockets / MQTT
+- Interface Web moderne écrite en **JavaScript / React**
+
+## 📂 Structure du projet
+- \`/src/main.cpp\` : Code source de la puce ESP32.
+- \`/include/config.h\` : Paramètres de connexion Wi-Fi et Cloud.
+- \`/web/app.js\` : Code de l'interface client.`,
+    'src/main.cpp': `#include <Arduino.h>
+#include "config.h"
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Initialisation du capteur IoT...");
+}
+
+void loop() {
+  // Lecture continue des données
+  delay(1000);
+}`,
+    'web/app.js': `// Initialisation du WebSocket vers le microcontrôleur
+const socket = new WebSocket('ws://192.168.1.50/ws');
+
+socket.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log("Données reçues de la puce :", data);
+};`
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div className="flex items-center space-x-2 text-purple-400">
+          <GitBranch className="w-5 h-5" />
+          <h2 className="text-xl font-bold">Module 1 : Naviguer dans un projet GitHub</h2>
+        </div>
+        <p className="text-slate-300 text-sm leading-relaxed">
+          Un dépôt GitHub regroupe le code source, l'historique des modifications (<strong>Commits</strong>), les propositions d'améliorations (<strong>Pull Requests</strong>) et la documentation principale dans le fichier <strong>README.md</strong>.
+        </p>
+      </div>
+
+      {/* Simulated Interactive GitHub Repository UI */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        {/* Repo Header */}
+        <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center space-x-2 text-sm font-mono text-slate-300">
+            <span className="text-purple-400 hover:underline cursor-pointer">org-iot-community</span>
+            <span>/</span>
+            <span className="font-bold text-white">SmartStation-ESP32</span>
+            <span className="bg-slate-800 text-xs px-2 py-0.5 rounded-full text-slate-400 border border-slate-700">Public</span>
+          </div>
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => setCurrentTab('code')}
+              className={`px-3 py-1 rounded-md text-xs font-medium flex items-center space-x-1 ${currentTab === 'code' ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              <span>Code</span>
+            </button>
+            <button 
+              onClick={() => setCurrentTab('pulls')}
+              className={`px-3 py-1 rounded-md text-xs font-medium flex items-center space-x-1 ${currentTab === 'pulls' ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >
+              <GitPullRequest className="w-3.5 h-3.5" />
+              <span>Pull Requests (2)</span>
+            </button>
+            <button 
+              onClick={() => setCurrentTab('commits')}
+              className={`px-3 py-1 rounded-md text-xs font-medium flex items-center space-x-1 ${currentTab === 'commits' ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >
+              <GitCommit className="w-3.5 h-3.5" />
+              <span>Commits (14)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Contents */}
+        {currentTab === 'code' && (
+          <div className="grid grid-cols-1 md:grid-cols-4 min-h-[300px]">
+            {/* File Tree Sidebar */}
+            <div className="bg-slate-950/50 border-r border-slate-800 p-3 space-y-1 font-mono text-xs">
+              <div className="text-slate-500 uppercase font-sans text-[10px] tracking-wider mb-2">Fichiers du projet</div>
+              <button 
+                onClick={() => setCurrentFile('README.md')}
+                className={`w-full text-left px-2 py-1.5 rounded flex items-center space-x-2 ${currentFile === 'README.md' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Info className="w-3.5 h-3.5 text-blue-400" />
+                <span>README.md</span>
+              </button>
+              <button 
+                onClick={() => setCurrentFile('src/main.cpp')}
+                className={`w-full text-left px-2 py-1.5 rounded flex items-center space-x-2 ${currentFile === 'src/main.cpp' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Code className="w-3.5 h-3.5 text-emerald-400" />
+                <span>src/main.cpp</span>
+              </button>
+              <button 
+                onClick={() => setCurrentFile('web/app.js')}
+                className={`w-full text-left px-2 py-1.5 rounded flex items-center space-x-2 ${currentFile === 'web/app.js' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-400 hover:text-white'}`}
+              >
+                <FileCode className="w-3.5 h-3.5 text-amber-400" />
+                <span>web/app.js</span>
+              </button>
+            </div>
+
+            {/* Code Viewer Panel */}
+            <div className="md:col-span-3 p-4 bg-slate-900 font-mono text-xs overflow-x-auto">
+              <div className="text-slate-500 mb-2 border-b border-slate-800 pb-1 flex justify-between">
+                <span>Affichage : {currentFile}</span>
+                <span className="text-[10px]">UTF-8</span>
+              </div>
+              <pre className="text-slate-200 whitespace-pre-wrap">{fileContents[currentFile]}</pre>
+            </div>
+          </div>
+        )}
+
+        {currentTab === 'pulls' && (
+          <div className="p-4 space-y-3 font-sans text-xs">
+            <p className="text-slate-400 mb-2">Une <strong>Pull Request (PR)</strong> est une demande de fusion de modifications écrites par un développeur vers la branche principale (main).</p>
+            <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg flex justify-between items-center">
+              <div>
+                <span className="text-emerald-400 font-bold text-sm block">#12 Fix : Correction du délai d'envoi MQTT</span>
+                <span className="text-slate-500">Ouvert il y a 2h par alex_dev • 2 fichiers modifiés</span>
+              </div>
+              <span className="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-[10px] border border-emerald-500/30">Prêt à fussionner</span>
+            </div>
+            <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg flex justify-between items-center">
+              <div>
+                <span className="text-purple-400 font-bold text-sm block">#11 Feature : Ajout du graphique d'historique de température</span>
+                <span className="text-slate-500">Ouvert il y a 1 jour par sarah_frontend</span>
+              </div>
+              <span className="bg-amber-500/10 text-amber-400 px-2 py-1 rounded text-[10px] border border-amber-500/30">Revue en cours</span>
+            </div>
+          </div>
+        )}
+
+        {currentTab === 'commits' && (
+          <div className="p-4 space-y-2 font-mono text-xs">
+            <div className="border-l-2 border-purple-500 pl-3 py-1">
+              <div className="text-slate-200 font-bold">feat: ajout du support WebSocket dans app.js</div>
+              <div className="text-slate-500 text-[10px]">Commit a4f9b2c - Hier par Thomas</div>
+            </div>
+            <div className="border-l-2 border-slate-700 pl-3 py-1">
+              <div className="text-slate-200 font-bold">init: squelette de code C++ pour ESP32</div>
+              <div className="text-slate-500 text-[10px]">Commit e8110a1 - Il y a 3 jours par Thomas</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mini Quest / Exercise */}
+      <div className="bg-gradient-to-r from-purple-900/30 to-slate-900 border border-purple-500/30 rounded-2xl p-5 space-y-3">
+        <h3 className="font-bold text-purple-300 text-sm flex items-center space-x-2">
+          <Trophy className="w-4 h-4 text-amber-400" />
+          <span>Mini-Quête : Explorateur Git</span>
+        </h3>
+        <p className="text-xs text-slate-300">
+          Cliquez sur le fichier <strong>src/main.cpp</strong> dans la navigation du projet ci-dessus pour inspecter le code source principal de l'application embarquée.
+        </p>
+        {currentFile === 'src/main.cpp' && !completedQuest && (
+          <button
+            onClick={() => {
+              setCompletedQuest(true);
+              markLessonComplete('mod_1');
+              addXP(100, 'Git Navigator');
+            }}
+            className="bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs px-4 py-2 rounded-xl transition shadow-lg"
+          >
+            Valider la quête (+100 XP & Badge Git Navigator)
+          </button>
+        )}
+        {completedQuest && (
+          <div className="text-xs text-emerald-400 flex items-center space-x-2 font-medium">
+            <Check className="w-4 h-4" />
+            <span>Quête accomplie ! Vous savez naviguer dans un dépôt GitHub.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MODULE 2: SYSTEM ARCHITECTURE & IOT CONNECTIVITY
+// -----------------------------------------------------------------------------
+function Module2Architecture({ markLessonComplete, addXP }) {
+  const [selectedNode, setSelectedNode] = useState('microcontroller');
+
+  const nodeDetails = {
+    microcontroller: {
+      title: 'Microcontrôleur (ESP32 / Arduino C++)',
+      role: 'Exécute le code C++ bas niveau. Lit les broches physiques (température, boutons) et actionne des relais/moteurs.',
+      protocols: ['Bluetooth LE (Proximité)', 'Wi-Fi / MQTT (Léger)', 'Serial/UART (Câble USB)']
+    },
+    cloud: {
+      title: 'Serveur Cloud & Broker MQTT',
+      role: 'Sert d\'intermédiaire central. Reçoit les messages des objets connectés et les redistribue aux tableaux de bord en temps réel.',
+      protocols: ['MQTT (Pub/Sub)', 'REST APIs (HTTP GET/POST)', 'WebSockets (Flux continu)']
+    },
+    dashboard: {
+      title: 'Tableau de bord Web (JavaScript / Navigateur)',
+      role: 'Interface utilisateur interactive. Lit les API, affiche les graphiques en direct et envoie des commandes aux appareils.',
+      protocols: ['HTTP / Fetch API', 'WebSockets', 'JSON Format']
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div className="flex items-center space-x-2 text-blue-400">
+          <Globe className="w-5 h-5" />
+          <h2 className="text-xl font-bold">Module 2 : Architecture Système & IoT</h2>
+        </div>
+        <p className="text-slate-300 text-sm leading-relaxed">
+          Comment un clic sur votre téléphone allume-t-il une lampe à l'autre bout du monde ? Grâce à une architecture distribuée où chaque couche a un rôle précis.
+        </p>
+      </div>
+
+      {/* Interactive Architecture Schema */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+        <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Cliquez sur un élément de l'architecture pour l'analyser :</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+          {/* Node 1 */}
+          <div 
+            onClick={() => setSelectedNode('microcontroller')}
+            className={`p-4 rounded-xl border-2 cursor-pointer transition flex flex-col items-center text-center space-y-2 ${
+              selectedNode === 'microcontroller' 
+                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300 shadow-lg shadow-emerald-500/10' 
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+            }`}
+          >
+            <Cpu className="w-8 h-8 text-emerald-400" />
+            <span className="font-bold text-sm">1. Appareil Physique</span>
+            <span className="text-[10px] text-slate-500">Puce C++ ESP32 + Capteurs</span>
+          </div>
+
+          {/* Node 2 */}
+          <div 
+            onClick={() => setSelectedNode('cloud')}
+            className={`p-4 rounded-xl border-2 cursor-pointer transition flex flex-col items-center text-center space-y-2 ${
+              selectedNode === 'cloud' 
+                ? 'bg-blue-500/10 border-blue-500 text-blue-300 shadow-lg shadow-blue-500/10' 
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+            }`}
+          >
+            <Cloud className="w-8 h-8 text-blue-400" />
+            <span className="font-bold text-sm">2. Nuage & Broker</span>
+            <span className="text-[10px] text-slate-500">Broker MQTT / Serveur Web</span>
+          </div>
+
+          {/* Node 3 */}
+          <div 
+            onClick={() => setSelectedNode('dashboard')}
+            className={`p-4 rounded-xl border-2 cursor-pointer transition flex flex-col items-center text-center space-y-2 ${
+              selectedNode === 'dashboard' 
+                ? 'bg-amber-500/10 border-amber-500 text-amber-300 shadow-lg shadow-amber-500/10' 
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+            }`}
+          >
+            <Smartphone className="w-8 h-8 text-amber-400" />
+            <span className="font-bold text-sm">3. Interface Web JS</span>
+            <span className="text-[10px] text-slate-500">Dashboard Navigateur</span>
+          </div>
+        </div>
+
+        {/* Selected Component Focus Details */}
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+          <h4 className="font-bold text-white text-sm flex items-center space-x-2">
+            <Radio className="w-4 h-4 text-cyan-400" />
+            <span>{nodeDetails[selectedNode].title}</span>
+          </h4>
+          <p className="text-xs text-slate-300 leading-relaxed">{nodeDetails[selectedNode].role}</p>
+          <div className="pt-2">
+            <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Protocole(s) de communication utilisés :</span>
+            <div className="flex flex-wrap gap-2">
+              {nodeDetails[selectedNode].protocols.map((proto, idx) => (
+                <span key={idx} className="bg-slate-800 text-slate-300 px-2.5 py-1 rounded text-xs border border-slate-700 font-mono">
+                  {proto}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => {
+            markLessonComplete('mod_2');
+            addXP(100, 'Fullstack Architect');
+          }}
+          className="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-5 py-2.5 rounded-xl transition shadow-lg flex items-center space-x-2"
+        >
+          <span>Valider ce module (+100 XP)</span>
+          <Check className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MODULE 3: C++ DECIPHERED
+// -----------------------------------------------------------------------------
+function Module3Cpp({ markLessonComplete, addXP }) {
+  const [activeConcept, setActiveConcept] = useState('loop');
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div className="flex items-center space-x-2 text-emerald-400">
+          <Cpu className="w-5 h-5" />
+          <h2 className="text-xl font-bold">Module 3 : Comprendre le C++ Embarqué</h2>
+        </div>
+        <p className="text-slate-300 text-sm leading-relaxed">
+          Le C++ est un langage ultra-rapide utilisé pour programmer le matériel physique. En embarqué (Arduino, ESP32), le programme tourne autour de deux fonctions clés : <code className="text-emerald-400 font-mono">setup()</code> et <code className="text-emerald-400 font-mono">loop()</code>.
+        </p>
+      </div>
+
+      {/* Interactive Code Annotator */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Concepts Buttons */}
+        <div className="space-y-2">
+          <button 
+            onClick={() => setActiveConcept('loop')}
+            className={`w-full text-left p-3 rounded-xl border text-xs font-medium transition ${activeConcept === 'loop' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+          >
+            <span className="font-bold block text-white mb-0.5">1. setup() & loop()</span>
+            <span>La structure de base du hardware</span>
+          </button>
+          <button 
+            onClick={() => setActiveConcept('pointers')}
+            className={`w-full text-left p-3 rounded-xl border text-xs font-medium transition ${activeConcept === 'pointers' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+          >
+            <span className="font-bold block text-white mb-0.5">2. Les Pointeurs (*)</span>
+            <span>Adresses mémoire bas niveau</span>
+          </button>
+          <button 
+            onClick={() => setActiveConcept('classes')}
+            className={`w-full text-left p-3 rounded-xl border text-xs font-medium transition ${activeConcept === 'classes' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+          >
+            <span className="font-bold block text-white mb-0.5">3. Classes & Objet</span>
+            <span>Structuration orientée objet</span>
+          </button>
+        </div>
+
+        {/* Code Explanation Area */}
+        <div className="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 font-mono text-xs">
+          {activeConcept === 'loop' && (
+            <>
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 space-y-1">
+                <span className="text-slate-500">// Exécuté 1 seule fois au démarrage de la puce</span><br/>
+                <span className="text-purple-400">void</span> <span className="text-blue-400">setup</span>() &#123;<br/>
+                &nbsp;&nbsp;PinMode(<span className="text-amber-400">2</span>, OUTPUT); <span className="text-slate-500">// Prépare la LED</span><br/>
+                &#125;<br/><br/>
+                <span className="text-slate-500">// Exécuté en boucle infinie tant que la puce est allumée</span><br/>
+                <span className="text-purple-400">void</span> <span className="text-blue-400">loop</span>() &#123;<br/>
+                &nbsp;&nbsp;digitalWrite(<span className="text-amber-400">2</span>, HIGH); <span className="text-slate-500">// Allume la LED</span><br/>
+                &nbsp;&nbsp;delay(<span className="text-amber-400">1000</span>);<br/>
+                &#125;
+              </div>
+              <p className="text-slate-300 font-sans text-xs leading-relaxed">
+                <strong>Explication :</strong> Contrairement à un script JS Web qui attend des actions de l'utilisateur, un microcontrôleur tourne en boucle constante (<code className="text-emerald-400">loop()</code>) pour surveiller le monde physique.
+              </p>
+            </>
+          )}
+
+          {activeConcept === 'pointers' && (
+            <>
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 space-y-1">
+                <span className="text-purple-400">int</span> temp = <span className="text-amber-400">25</span>; <span className="text-slate-500">// Une valeur standard</span><br/>
+                <span className="text-purple-400">int</span>* ptr = &temp; <span className="text-slate-500">// ptr contient l'adresse mémoire de temp</span><br/><br/>
+                Serial.println(*ptr); <span className="text-slate-500">// Affiche 25 en lisant la mémoire direct</span>
+              </div>
+              <p className="text-slate-300 font-sans text-xs leading-relaxed">
+                <strong>Pointeurs :</strong> Un symbole <code className="text-emerald-400">*</code> indique qu'au lieu de manipuler une copie de donnée, on pointe directement vers l'adresse RAM exacte. C'est ce qui rend le C++ rapide et adapté aux systèmes embarqués stricts.
+              </p>
+            </>
+          )}
+
+          {activeConcept === 'classes' && (
+            <>
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 space-y-1">
+                <span className="text-purple-400">class</span> <span className="text-yellow-400">Sensor</span> &#123;<br/>
+                <span className="text-purple-400">public:</span><br/>
+                &nbsp;&nbsp;<span className="text-purple-400">float</span> readTemp() &#123; <span className="text-purple-400">return</span> <span className="text-amber-400">23.5</span>; &#125;<br/>
+                &#125;;<br/><br/>
+                <span className="text-yellow-400">Sensor</span> mySensor;<br/>
+                <span className="text-purple-400">float</span> t = mySensor.readTemp();
+              </div>
+              <p className="text-slate-300 font-sans text-xs leading-relaxed">
+                <strong>Programmation Orientée Objet :</strong> Permet d'encapsuler la logique d'un composant matériel (ex: capteur, moteur) dans un objet réutilisable.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => {
+            markLessonComplete('mod_3');
+            addXP(100, 'C++ Hardware Hacker');
+          }}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-5 py-2.5 rounded-xl transition shadow-lg flex items-center space-x-2"
+        >
+          <span>Valider la leçon C++ (+100 XP)</span>
+          <Check className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MODULE 4: JAVASCRIPT ASYNC & WEB INTERFACES
+// -----------------------------------------------------------------------------
+function Module4JS({ markLessonComplete, addXP }) {
+  const [apiResponse, setApiResponse] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const simulateFetch = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setApiResponse({
+        device_id: "ESP32_STATION_01",
+        temperature: (20 + Math.random() * 5).toFixed(1),
+        humidity: (45 + Math.random() * 10).toFixed(0),
+        status: "ONLINE"
+      });
+      setLoading(false);
+    }, 1200);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div className="flex items-center space-x-2 text-amber-400">
+          <Code className="w-5 h-5" />
+          <h2 className="text-xl font-bold">Module 4 : JavaScript Asynchrone & Interfaces Web</h2>
+        </div>
+        <p className="text-slate-300 text-sm leading-relaxed">
+          Le réseau prend du temps pour répondre. JavaScript utilise des fonctions <strong>asynchrones</strong> (<code className="text-amber-400 font-mono">async / await</code>) et la fonction <code className="text-amber-400 font-mono">fetch()</code> pour interroger le matériel sans bloquer la page Web.
+        </p>
+      </div>
+
+      {/* Code Sandbox Test */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <h3 className="font-bold text-sm text-white">Testeur d'appel API Fetch en Direct</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+          {/* JS Code snippet */}
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div className="text-slate-500">// Code JavaScript de requête REST</div>
+            <div className="text-slate-300">
+              <span className="text-purple-400">async function</span> <span className="text-blue-400">getSensorData</span>() &#123;<br/>
+              &nbsp;&nbsp;<span className="text-purple-400">const</span> res = <span className="text-purple-400">await</span> fetch(<span className="text-emerald-300">'/api/sensor'</span>);<br/>
+              &nbsp;&nbsp;<span className="text-purple-400">const</span> data = <span className="text-purple-400">await</span> res.json();<br/>
+              &nbsp;&nbsp;<span className="text-purple-400">return</span> data;<br/>
+              &#125;
+            </div>
+            <button
+              onClick={simulateFetch}
+              disabled={loading}
+              className="mt-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg transition flex items-center space-x-2 font-sans text-xs"
+            >
+              {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <span>{loading ? 'Connexion en cours...' : 'Exécuter fetch()'}</span>
+            </button>
+          </div>
+
+          {/* JSON Output Viewer */}
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div className="text-slate-500 mb-2">Réponse du serveur (Format JSON) :</div>
+              {apiResponse ? (
+                <pre className="text-amber-300">{JSON.stringify(apiResponse, null, 2)}</pre>
+              ) : (
+                <span className="text-slate-600 italic">Cliquez sur Exécuter pour lancer la requête.</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => {
+            markLessonComplete('mod_4');
+            addXP(100, 'Async JS Wizard');
+          }}
+          className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg flex items-center space-x-2"
+        >
+          <span>Valider ce module (+100 XP)</span>
+          <Check className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MODULE 5: PRACTICAL EXERCISES & QUIZ
+// -----------------------------------------------------------------------------
+function Module5Challenges({ markLessonComplete, addXP }) {
+  const [quizAnswer, setQuizAnswer] = useState(null);
+  const [isCorrect, setIsCorrect] = useState(null);
+
+  const checkAnswer = (index) => {
+    setQuizAnswer(index);
+    if (index === 1) { // Correct answer index
+      setIsCorrect(true);
+      markLessonComplete('mod_5');
+      addXP(150, 'Master Evalué');
+    } else {
+      setIsCorrect(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div className="flex items-center space-x-2 text-red-400">
+          <Award className="w-5 h-5" />
+          <h2 className="text-xl font-bold">Module 5 : Quiz & Validation des Acquis</h2>
+        </div>
+        <p className="text-slate-300 text-sm leading-relaxed">
+          Testez vos connaissances globales avant de passer au simulateur final Capstone.
+        </p>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <h3 className="font-bold text-sm text-white">Question : Dans une architecture IoT complète, quel rôle joue le C++ par rapport au JavaScript ?</h3>
+        
+        <div className="space-y-2">
+          {[
+            "Le C++ sert uniquement à afficher la page web dans le navigateur.",
+            "Le C++ s'exécute directement sur la puce physique pour lire les capteurs, tandis que JavaScript gère l'interface web utilisateur.",
+            "Le JavaScript est compilé dans la mémoire de l'ESP32 et le C++ gère le Wi-Fi seulement."
+          ].map((option, idx) => (
+            <button
+              key={idx}
+              onClick={() => checkAnswer(idx)}
+              className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition ${
+                quizAnswer === idx 
+                  ? (isCorrect ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-red-500/20 border-red-500 text-red-300')
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {isCorrect === true && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Excellente réponse ! Vous avez compris la complémentarité C++ / JavaScript.</span>
+          </div>
+        )}
+        {isCorrect === false && (
+          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs">
+            Dommage ! Réessayez. Pensez au rôle physique de la puce par rapport au navigateur client.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// CAPSTONE BOSS LEVEL - FULL IOT SIMULATOR
+// -----------------------------------------------------------------------------
+function CapstoneView({ userProfile, addXP, setUserProfile }) {
+  // Virtual Hardware State
+  const [devicePower, setDevicePower] = useState(true);
+  const [temperatureSensor, setTemperatureSensor] = useState(24.5);
+  const [relayState, setRelayState] = useState(false); // LED/Actuator state
+  
+  // Simulation logs
+  const [telemetryLogs, setTelemetryLogs] = useState([]);
+  const [isRunning, setIsRunning] = useState(true);
+
+  // Simulation Loop
+  useEffect(() => {
+    if (!isRunning || !devicePower) return;
+
+    const interval = setInterval(() => {
+      // Simulate minor sensor fluctuation
+      const fluc = (Math.random() - 0.5) * 0.4;
+      const currentTemp = +(temperatureSensor + fluc).toFixed(1);
+      setTemperatureSensor(currentTemp);
+
+      // Add Telemetry Packet
+      const newLog = `[MQTT PUBLISH] Topic: home/esp32/telemetry -> {"temp": ${currentTemp}, "relay": ${relayState ? 1 : 0}}`;
+      setTelemetryLogs(prev => [newLog, ...prev.slice(0, 15)]);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, devicePower, temperatureSensor, relayState]);
+
+  const toggleRelayFromWeb = () => {
+    const newState = !relayState;
+    setRelayState(newState);
+    setTelemetryLogs(prev => [
+      `[WEB HTTP POST] Request to /api/relay -> Payload: { state: ${newState ? 1 : 0} }`,
+      `[ESP32 RECEIVE] Activating relay pin 5 -> ${newState ? 'HIGH' : 'LOW'}`,
+      ...prev
+    ]);
+  };
+
+  const handleFinishCapstone = () => {
+    addXP(300, 'Fullstack IoT Master');
+    setUserProfile(prev => ({ ...prev, capstoneCompleted: true }));
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* Capstone Header */}
+      <div className="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/30 rounded-2xl p-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-amber-400">
+            <Zap className="w-6 h-6" />
+            <h2 className="text-2xl font-bold">Projet Capstone : Dashboard IoT & Firmware Interactif</h2>
+          </div>
+          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full text-xs font-semibold">
+            Atelier Pratique Final
+          </span>
+        </div>
+        <p className="text-slate-300 text-sm leading-relaxed">
+          Manipulez directement ce simulateur physique et web. Modifiez les états virtuels de la puce C++ ESP32, observez la télémétrie en temps réel et contrôlez les relais via l'interface JavaScript.
+        </p>
+      </div>
+
+      {/* Main Interactive Playground Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* LEFT: Virtual Microcontroller (C++ Engine) */}
+        <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <Cpu className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-white text-sm">Puce Physique ESP32 (Firmware C++)</h3>
+              </div>
+              <button 
+                onClick={() => setDevicePower(!devicePower)}
+                className={`px-2.5 py-1 rounded text-xs font-bold transition ${devicePower ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'}`}
+              >
+                {devicePower ? 'ALIMENTÉ (ON)' : 'HORSTENSION (OFF)'}
+              </button>
+            </div>
+
+            {/* Virtual Hardware Controls */}
+            <div className="space-y-4">
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Simulateur de Capteur DHT22 (Température)</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-mono font-bold text-cyan-400">{temperatureSensor} °C</span>
+                  <input 
+                    type="range" 
+                    min="10" 
+                    max="40" 
+                    step="0.5"
+                    value={temperatureSensor}
+                    onChange={(e) => setTemperatureSensor(parseFloat(e.target.value))}
+                    disabled={!devicePower}
+                    className="w-1/2 accent-cyan-400 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Actuator State */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Acteur Physique (Relais / LED)</span>
+                  <span className="text-xs text-slate-500">Broche Pin 5 GPIO</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`w-4 h-4 rounded-full ${relayState ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50 animate-pulse' : 'bg-slate-700'}`} />
+                  <span className="text-xs font-mono text-slate-300 font-bold">{relayState ? 'ALLUMÉ' : 'ÉTEINT'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* C++ Code Preview snippet */}
+          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-400 overflow-x-auto">
+            <div className="text-slate-600 mb-1">// Firmware C++ exécuté sur la puce</div>
+            <span className="text-purple-400">if</span> (relayCmd == <span className="text-amber-400">HIGH</span>) &#123;<br/>
+            &nbsp;&nbsp;digitalWrite(<span className="text-amber-400">RELAY_PIN</span>, <span className="text-amber-400">HIGH</span>);<br/>
+            &#125;
+          </div>
+        </div>
+
+        {/* RIGHT: Web Dashboard Interface (JavaScript) */}
+        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <Globe className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-white text-sm">Dashboard Client Web (JavaScript)</h3>
+              </div>
+              <span className="text-xs font-mono text-slate-500">Connexion: WebSocket active</span>
+            </div>
+
+            {/* Dashboard Controls & Telemetry Widget */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <span className="text-xs text-slate-400 font-medium">Température reçue en direct</span>
+                <div className="text-3xl font-black text-amber-400 font-mono">
+                  {devicePower ? `${temperatureSensor} °C` : 'N/A'}
+                </div>
+                <span className="text-[10px] text-slate-500 block">Dernier paquet MQTT reçu à l'instant</span>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2">
+                <span className="text-xs text-slate-400 font-medium">Commande à distance</span>
+                <button
+                  onClick={toggleRelayFromWeb}
+                  disabled={!devicePower}
+                  className={`w-full py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center space-x-2 shadow-lg ${
+                    relayState 
+                      ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40' 
+                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>{relayState ? 'Éteindre l\'appareil' : 'Allumer l\'appareil'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Network / Console Logs Window */}
+            <div className="mt-4 bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Flux Réseau & Logs Console</span>
+              <div className="h-32 overflow-y-auto font-mono text-[10px] space-y-1 text-slate-400">
+                {telemetryLogs.map((log, idx) => (
+                  <div key={idx} className="border-b border-slate-900/50 pb-0.5">
+                    {log}
+                  </div>
+                ))}
+                {telemetryLogs.length === 0 && <span className="text-slate-600 italic">En attente de messages réseau...</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Validation Button */}
+          <div className="pt-2 flex justify-end">
+            <button
+              onClick={handleFinishCapstone}
+              disabled={userProfile.capstoneCompleted}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-6 py-3 rounded-xl transition shadow-xl flex items-center space-x-2"
+            >
+              <Trophy className="w-4 h-4" />
+              <span>{userProfile.capstoneCompleted ? 'Projet Capstone Validé !' : 'Terminer le Projet Final (+300 XP)'}</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
